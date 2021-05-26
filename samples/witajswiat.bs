@@ -1,6 +1,4 @@
-wykorzystaj stdio
+wykorzystaj "stdio"
 
 poczatek miasta bydgoszcz:
-	zadzwon miasto printf daj ("Hello, world!");
-	oddaj 0;
-koniec miasta
+koniec
