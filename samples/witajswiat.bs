@@ -1,4 +1,5 @@
 wykorzystaj "stdio"
 
 poczatek miasta bydgoszcz:
+	obywatel i przechowuje cyferki;
 koniec
