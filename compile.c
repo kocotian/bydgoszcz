@@ -225,11 +225,8 @@ compile(File f)
 			t = enextToken(&f, TokenString);
 			dprintf(f.outfd, "#include <%.*s.h>\n",
 					(int)t->c.len - 2, t->c.data + 1);
-		} else if (!(Strccmp(t->c, "poczatek"))) {
-			t = enextToken(&f, TokenIdentifier);
-			if (!(Strccmp(t->c, "miasta"))) {
-				g_miasto(&f);
-			}
+		} else if (!(Strccmp(t->c, "miasto"))) {
+			g_miasto(&f);
 		} else {
 			errwarn(f, 1, "unexpected token");
 		}

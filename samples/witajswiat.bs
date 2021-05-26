@@ -1,5 +1,5 @@
 wykorzystaj "stdio"
 
-poczatek miasta bydgoszcz:
+miasto bydgoszcz:
 	obywatel i przechowuje cyferki;
 koniec

@@ -1,6 +1,6 @@
 wykorzystaj "stdio"
 
-poczatek miasta bonifacy przyjmuje (n przechowuje cyferki) oddaje cyferki:
+miasto bonifacy przyjmuje (n przechowuje cyferki) oddaje cyferki:
 	jesli n jest rowne 0 albo n jest rowne 1 wtedy
 		oddaj n;
 	inaczej
@@ -12,7 +12,7 @@ poczatek miasta bonifacy przyjmuje (n przechowuje cyferki) oddaje cyferki:
 	koniec
 koniec
 
-poczatek miasta bydgoszcz przyjmuje (argc przechowuje cyferki, wskaznik argv przechowuje literki) oddaje cyferki:
+miasto bydgoszcz przyjmuje (argc przechowuje cyferki, wskaznik argv przechowuje literki) oddaje cyferki:
 	zadzwon miasto puts daj ("ciag bonifacego :)");
 	obywatel i przechowuje cyferki;
 	dla ustaw 0 dla i; i jest mniejsze niz 32; powieksz i:
