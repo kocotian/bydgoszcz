@@ -31,9 +31,11 @@
 #include <str.h>
 #include <util.h>
 
+#define MAX_TYPESIZE 256
+
 static String defaultType(void);
 static Token *enextToken(File *f, TokenType type);
-static String g_type(File *f);
+static void g_type(File *f, String *str);
 static void g_expression(File *f);
 static void g_zadzwon(File *f);
 static void g_obywatel(File *f);
@@ -42,7 +44,8 @@ static void g_miasto(File *f);
 static String
 defaultType(void)
 {
-	return (String){ .data = "int", .len = 3 };
+	char *data = malloc(MAX_TYPESIZE); /* XXX: not freed */
+	return (String){ .data = strcpy(data, "int"), .len = 3 };
 }
 
 static Token *
@@ -57,8 +60,8 @@ enextToken(File *f, TokenType type)
 	return r;
 }
 
-static String
-g_type(File *f)
+static void
+g_type(File *f, String *str)
 {
 	Token *t;
 	String name, s;
@@ -101,29 +104,25 @@ g_type(File *f)
 			break;
 		}
 	}
-#define TYPESIZ 256
-	/* FIXME: Temporary! Not freed after usage! */
-	s.data = malloc(TYPESIZ);
+	str->len = (size_t)(*(str->data) = 0);
 	if (isptrconst && ptrlvl)
-		strncat(s.data, "const ", TYPESIZ - s.len), s.len += 5;
+		strncat(str->data, "const ", MAX_TYPESIZE - str->len), str->len += 5;
 	if (isunsigned == 1)
-		strncat(s.data, "unsigned ", TYPESIZ - s.len), s.len += 9;
+		strncat(str->data, "unsigned ", MAX_TYPESIZE - str->len), str->len += 9;
 	else if (isunsigned == 2)
-		strncat(s.data, "signed ", TYPESIZ - s.len), s.len += 7;
+		strncat(str->data, "signed ", MAX_TYPESIZE - str->len), str->len += 7;
 	if (isshort)
-		strncat(s.data, "short ", TYPESIZ - s.len), s.len += 6;
+		strncat(str->data, "short ", MAX_TYPESIZE - str->len), str->len += 6;
 	else if (islong)
-		strncat(s.data, "long ", TYPESIZ - s.len), s.len += 5;
+		strncat(str->data, "long ", MAX_TYPESIZE - str->len), str->len += 5;
 
-	strncat(s.data, name.data, UMIN(TYPESIZ - s.len, name.len));
+	strncat(str->data, name.data, UMIN(MAX_TYPESIZE - str->len, name.len));
+	str->len += name.len;
 
-	if (ptrlvl) while (ptrlvl--)
-		strncat(s.data, "*", TYPESIZ - s.len++);
+	while (ptrlvl > 0 && ptrlvl--)
+		strncat(str->data, "*", MAX_TYPESIZE - str->len++);
 	if (isvalconst)
-		strncat(s.data, " const", TYPESIZ - s.len), s.len += 5;
-#undef TYPESIZ
-
-	return s;
+		strncat(str->data, " const", MAX_TYPESIZE - str->len), str->len += 5;
 }
 
 static void
@@ -184,7 +183,7 @@ g_obywatel(File *f)
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenIdentifier) {
 			if (!Strccmp(t->c, "przechowuje")) {
-				type = g_type(f);
+				g_type(f, &type);
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
 			}
@@ -242,7 +241,7 @@ g_miasto(File *f)
 			return;
 		} else if (t->type == TokenIdentifier) {
 			if (!(Strccmp(t->c, "oddaje"))) {
-				type = g_type(f);
+				g_type(f, &type);
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected przyjmuje or oddaje)");
 			}
