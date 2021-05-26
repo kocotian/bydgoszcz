@@ -96,6 +96,8 @@ g_type(File *f)
 				name.len = strlen(name.data = "float");
 			else if (!Strccmp(t->c, "podwojne"))
 				name.len = strlen(name.data = "double");
+			else if (!Strccmp(t->c, "cierpienie"))
+				name.len = strlen(name.data = "int");
 			else
 				name = t->c;
 			break;
