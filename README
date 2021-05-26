@@ -1,0 +1,10 @@
+bydgoszczscript
+===============
+
+bydgoszczscript is a simple, fast and efficient programming language.
+
+building:
+	$ make
+
+samples:
+	$ ls samples
