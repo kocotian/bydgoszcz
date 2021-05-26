@@ -31,4 +31,6 @@ typedef struct String {
 int Strcmp(String s1, String s2);
 int Strccmp(const String s, const char *cs);
 
+#define Strevalf(S) (int)((S).len), (S).data
+
 #endif
