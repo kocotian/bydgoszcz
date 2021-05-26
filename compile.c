@@ -34,6 +34,9 @@
 static String defaultType(void);
 static Token *enextToken(File *f, TokenType type);
 static String g_type(File *f);
+static void g_expression(File *f);
+static void g_zadzwon(File *f);
+static void g_obywatel(File *f);
 static void g_miasto(File *f);
 
 static String
@@ -137,6 +140,50 @@ g_type(File *f)
 }
 
 static void
+g_expression(File *f)
+{
+	Token *t;
+	t = &(f->curtok);
+	if (t->type == TokenString) {
+		dprintf(f->outfd, "%.*s",
+				Strevalf(t->c));
+	} else {
+		errwarn(*f, 1, "expected expression");
+	}
+}
+
+static void
+g_zadzwon(File *f)
+{
+	Token *t;
+	String name;
+
+	t = enextToken(f, TokenIdentifier);
+	name = t->c;
+	dprintf(f->outfd, "%.*s(",
+			Strevalf(name));
+	t = enextToken(f, TokenNULL);
+	if (t->type == TokenIdentifier) {
+		if (!Strccmp(t->c, "daj")) {
+			while ((t = enextToken(f, TokenNULL))) {
+				if (t->type == TokenSemicolon)
+					goto semicolon;
+				else
+					g_expression(f);
+			}
+		} else {
+			errwarn(*f, 1, "unexpected identifier (expected daj)");
+		}
+	} else if (t->type == TokenSemicolon) {
+semicolon:
+		dprintf(f->outfd, ");\n");
+		return;
+	} else {
+		errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
+	}
+}
+
+static void
 g_obywatel(File *f)
 {
 	String name;
@@ -176,6 +223,8 @@ g_aglomeracja(File *f)
 				return;
 			} else if (!(Strccmp(t->c, "obywatel"))) {
 				g_obywatel(f);
+			} else if (!(Strccmp(t->c, "zadzwon"))) {
+				g_zadzwon(f);
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected a keyword)");
 			}

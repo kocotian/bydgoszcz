@@ -1,5 +1,5 @@
 wykorzystaj "stdio"
 
 miasto bydgoszcz:
-	obywatel i przechowuje cyferki;
+	zadzwon puts daj "Hello, world!";
 koniec

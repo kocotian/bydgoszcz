@@ -5,18 +5,18 @@ miasto bonifacy przyjmuje (n przechowuje cyferki) oddaje cyferki:
 		oddaj n;
 	inaczej
 		oddaj (
-			(zadzwon miasto bonifacy daj (n - 1))
+			(zadzwon bonifacy daj (n - 1))
 				plus
-			(zadzwon miasto bonifacy daj (n - 2))
+			(zadzwon bonifacy daj (n - 2))
 		);
 	koniec
 koniec
 
 miasto bydgoszcz przyjmuje (argc przechowuje cyferki, wskaznik argv przechowuje literki) oddaje cyferki:
-	zadzwon miasto puts daj ("ciag bonifacego :)");
+	zadzwon puts daj ("ciag bonifacego :)");
 	obywatel i przechowuje cyferki;
 	dla ustaw 0 dla i; i jest mniejsze niz 32; powieksz i:
-		zadzwon miasto bonifacy daj (i);
+		zadzwon bonifacy daj (i);
 	koniec
 	oddaj 0;
 koniec
