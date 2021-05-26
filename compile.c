@@ -78,19 +78,14 @@ g_type(File *f)
 			if (Strccmp(t->c, "na"))
 				errwarn(*f, 1, "expected 'na' after 'wskaznik'");
 			++ptrlvl;
-		} else if (!Strccmp(s, "staly")) {
-			isptrconst = 1;
-		} else if (!Strccmp(s, "stale")) {
-			isvalconst = 1;
-		} else if (!Strccmp(s, "nieoznakowane")) {
-			isunsigned = 1;
-		} else if (!Strccmp(s, "oznakowane")) {
-			isunsigned = 2;
-		} else if (!Strccmp(s, "krotkie")) {
-			isshort = 1;
-		} else if (!Strccmp(s, "dlugie")) {
-			islong = 1;
-		} else {
+		}
+		else if (!Strccmp(s, "staly")) isptrconst = 1;
+		else if (!Strccmp(s, "stale")) isvalconst = 1;
+		else if (!Strccmp(s, "nieoznakowane")) isunsigned = 1;
+		else if (!Strccmp(s, "oznakowane")) isunsigned = 2;
+		else if (!Strccmp(s, "krotkie")) isshort = 1;
+		else if (!Strccmp(s, "dlugie")) islong = 1;
+		else {
 			if (!Strccmp(t->c, "literki"))
 				name.len = strlen(name.data = "char");
 			else if (!Strccmp(t->c, "cyferki"))
@@ -107,33 +102,25 @@ g_type(File *f)
 		}
 	}
 #define TYPESIZ 256
-	s.data = malloc(TYPESIZ); /* FIXME: Temporary! Not freed after usage! */
-	if (isptrconst && ptrlvl) {
-		strncat(s.data, "const ", TYPESIZ - s.len);
-		s.len += 5;
-	}
-	if (isunsigned == 1) {
-		strncat(s.data, "unsigned ", TYPESIZ - s.len);
-		s.len += 9;
-	} else if (isunsigned == 2) {
-		strncat(s.data, "signed ", TYPESIZ - s.len);
-		s.len += 7;
-	}
-	if (isshort) {
-		strncat(s.data, "short ", TYPESIZ - s.len);
-		s.len += 6;
-	} else if (islong) {
-		strncat(s.data, "long ", TYPESIZ - s.len);
-		s.len += 5;
-	}
+	/* FIXME: Temporary! Not freed after usage! */
+	s.data = malloc(TYPESIZ);
+	if (isptrconst && ptrlvl)
+		strncat(s.data, "const ", TYPESIZ - s.len), s.len += 5;
+	if (isunsigned == 1)
+		strncat(s.data, "unsigned ", TYPESIZ - s.len), s.len += 9;
+	else if (isunsigned == 2)
+		strncat(s.data, "signed ", TYPESIZ - s.len), s.len += 7;
+	if (isshort)
+		strncat(s.data, "short ", TYPESIZ - s.len), s.len += 6;
+	else if (islong)
+		strncat(s.data, "long ", TYPESIZ - s.len), s.len += 5;
+
 	strncat(s.data, name.data, UMIN(TYPESIZ - s.len, name.len));
-	if (ptrlvl)
-	while (ptrlvl--)
+
+	if (ptrlvl) while (ptrlvl--)
 		strncat(s.data, "*", TYPESIZ - s.len++);
-	if (isvalconst) {
-		strncat(s.data, " const", TYPESIZ - s.len);
-		s.len += 5;
-	}
+	if (isvalconst)
+		strncat(s.data, " const", TYPESIZ - s.len), s.len += 5;
 #undef TYPESIZ
 
 	return s;
