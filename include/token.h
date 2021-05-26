@@ -49,5 +49,6 @@ typedef struct File {
 } File;
 
 Token *nextToken(File *f);
+char *stringizeTokenType(TokenType t);
 
 #endif
