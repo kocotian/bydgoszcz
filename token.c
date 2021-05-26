@@ -73,6 +73,26 @@ nextToken(File *f)
 		while (CURCHAR != '"' && NOT_OVERFLOW) ++i;
 		++i;
 	}
+	/* OpeningParenthesis */
+	else if ((CURCHAR == '(')) {
+		TYPE(TokenOpeningParenthesis);
+		++i;
+	}
+	/* ClosingParenthesis */
+	else if ((CURCHAR == ')')) {
+		TYPE(TokenClosingParenthesis);
+		++i;
+	}
+	/* Colon */
+	else if ((CURCHAR == ':')) {
+		TYPE(TokenColon);
+		++i;
+	}
+	/* Semicolon */
+	else if ((CURCHAR == ';')) {
+		TYPE(TokenSemicolon);
+		++i;
+	}
 	/* Other unexpected token */
 	else {
 		errwarn(*f, 1, "unexpected token: '%c'", CURCHAR);
@@ -84,3 +104,20 @@ nextToken(File *f)
 #undef NOT_OVERFLOW
 #undef i
 #undef CURCHAR
+
+char *
+stringizeTokenType(TokenType t)
+{
+	switch (t) {
+	case TokenNULL: return "<null>"; break;
+	case TokenIdentifier: return "identifier"; break;
+	case TokenNumber: return "number"; break;
+	case TokenString: return "string"; break;
+	case TokenOpeningParenthesis: return "opening parenthesis"; break;
+	case TokenClosingParenthesis: return "closing parenthesis"; break;
+	case TokenColon: return "colon"; break;
+	case TokenSemicolon: return "semicolon"; break;
+	default: break;
+	}
+	return "<unknown>";
+}
