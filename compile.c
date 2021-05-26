@@ -225,6 +225,8 @@ compile(File f)
 			t = enextToken(&f, TokenString);
 			dprintf(f.outfd, "#include <%.*s.h>\n",
 					(int)t->c.len - 2, t->c.data + 1);
+		} else if (!(Strccmp(t->c, "obywatel"))) {
+			g_obywatel(&f);
 		} else if (!(Strccmp(t->c, "miasto"))) {
 			g_miasto(&f);
 		} else {
