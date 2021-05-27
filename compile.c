@@ -433,6 +433,29 @@ g_aglomeracja(File *f)
 			} else if (!Strccmp(t->c, "typ")) {
 				dprintf(f->outfd, "typedef ");
 				g_obywatel(f);
+			} else if (!Strccmp(t->c, "oddaj")) {
+				dprintf(f->outfd, "return ");
+				t = enextToken(f, TokenNULL);
+				goto expr;
+			} else if (!Strccmp(t->c, "jesli")) {
+				dprintf(f->outfd, "if (");
+				while ((t = enextToken(f, TokenNULL))) {
+					g_expression(f, &expr);
+					t = enextToken(f, TokenIdentifier);
+					dprintf(f->outfd, "(%.*s)", Strevalf(expr));
+					if (!Strccmp(t->c, "wtedy"))
+						break;
+					else if (!Strccmp(t->c, "albo")) {
+						dprintf(f->outfd, " || ");
+					} else if (!Strccmp(t->c, "oraz")) {
+						dprintf(f->outfd, " && ");
+					} else {
+						errwarn(*f, 1, "unexpected identifier (expected albo, oraz or wtedy)");
+					}
+				}
+				dprintf(f->outfd, ") {\n");
+				t = enextToken(f, TokenColon);
+				g_aglomeracja(f);
 			} else {
 				goto expr;
 			}
