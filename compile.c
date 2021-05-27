@@ -458,6 +458,8 @@ g_aglomeracja(File *f)
 				dprintf(f->outfd, ") {\n");
 				t = enextToken(f, TokenColon);
 				g_aglomeracja(f);
+			} else if (!Strccmp(t->c, "inaczej")) {
+				dprintf(f->outfd, "} else {\n");
 			} else {
 				goto expr;
 			}
