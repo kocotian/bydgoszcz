@@ -1,5 +1,5 @@
 wykorzystaj "stdio"
 
 miasto bydgoszcz:
-	zadzwon puts daj "Hello, world!";
+	zadzwon puts daj: "Hello, world!";
 koniec

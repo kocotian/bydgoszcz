@@ -407,6 +407,7 @@ g_zadzwon(File *f, ExpressionString *str)
 	t = enextToken(f, TokenNULL);
 	if (t->type == TokenIdentifier) {
 		if (!Strccmp(t->c, "daj")) {
+			t = enextToken(f, TokenColon);
 			while ((t = enextToken(f, TokenNULL))) {
 				g_expression(f, &expr);
 				strncat(str->data, expr.data, MAX_EXPRESSIONSIZE);

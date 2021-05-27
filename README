@@ -8,3 +8,11 @@ building:
 
 samples:
 	$ ls samples
+
+---------------------------------------
+
+Coming soon:
+- arrays
+- unions
+- enums
+- better types
