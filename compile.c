@@ -343,6 +343,44 @@ g_expression(File *f, ExpressionString *str)
 			g_expression(f, &expr);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "!(%.*s)",
 					Strevalf(expr));
+		} else if (!Strccmp(t->c, "naprawde") || !Strccmp(t->c, "czy")) {
+			ExpressionString lexpr, rexpr;
+			int not; int equal; int greater; int lower;
+			not = equal = greater = lower = 0;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &lexpr);
+			t = enextToken(f, TokenIdentifier);
+			if (!Strccmp(t->c, "nie")) {
+				not = 1;
+				t = enextToken(f, TokenIdentifier);
+			}
+			else if (Strccmp(t->c, "jest"))
+				errwarn(*f, 1, "unexpected identifier (expected jest)");
+			t = enextToken(f, TokenIdentifier);
+tester:
+			if (!Strccmp(t->c, "rowne")) {
+				equal = 1;
+			} else {
+				if (!Strccmp(t->c, "wieksze")) {
+					greater = 1;
+				} else if (!Strccmp(t->c, "mniejsze")) {
+					lower = 1;
+				}
+				t = enextToken(f, TokenIdentifier);
+				if (!Strccmp(t->c, "albo")) {
+					t = enextToken(f, TokenIdentifier);
+					goto tester;
+				} else if (Strccmp(t->c, "niz"))
+					errwarn(*f, 1, "unexpected identifier (expected albo or niz)");
+			}
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &rexpr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%s((%.*s) %s%s (%.*s))",
+					not ? "!" : "",
+					Strevalf(lexpr),
+					greater ? ">" : lower ? "<" : equal ? "=" : "",
+					equal ? "=" : "",
+					Strevalf(rexpr));
 		} else {
 			strncpy(str->data, t->c.data, UMIN(MAX_EXPRESSIONSIZE, t->c.len));
 			str->len = t->c.len;
