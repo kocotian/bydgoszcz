@@ -26,23 +26,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <errwarn.h>
 #include <str.h>
 #include <util.h>
 
 #define MAX_TYPESIZE 8192
+#define MAX_EXPRESSIONSIZE 8192
 
 typedef struct {
 	char data[MAX_TYPESIZE];
 	size_t len;
 } TypeString;
 
+typedef struct {
+	char data[MAX_EXPRESSIONSIZE];
+	size_t len;
+} ExpressionString;
+
 static Token *enextToken(File *f, TokenType type);
 static void g_struct(File *f, TypeString *str);
 static void g_type(File *f, TypeString *str);
-static void g_expression(File *f);
-static void g_zadzwon(File *f);
+static void g_expression(File *f, ExpressionString *str);
+static void g_zadzwon(File *f, ExpressionString *str);
 static void g_obywatel(File *f);
 static void g_aglomeracja(File *f);
 static void g_miasto(File *f);
@@ -86,7 +93,9 @@ g_struct(File *f, TypeString *str)
 							errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
 						}
 					} else if (t->type == TokenSemicolon) {
-						snprintf(str->data + strlen(str->data), MAX_TYPESIZE - strlen(str->data), "%.*s %.*s;\n",
+						snprintf((char *)(str->data + strlen(str->data)),
+								MAX_TYPESIZE - strlen(str->data),
+								"%.*s %.*s;\n",
 								Strevalf(type), Strevalf(name));
 						break;
 					} else {
@@ -173,47 +182,212 @@ g_type(File *f, TypeString *str)
 }
 
 static void
-g_expression(File *f)
+g_expression(File *f, ExpressionString *str)
 {
 	Token *t;
+
 	t = &(f->curtok);
-	if (t->type == TokenString) {
-		dprintf(f->outfd, "%.*s",
-				Strevalf(t->c));
+	if (t->type == TokenNumber || t->type == TokenString) {
+		strncpy(str->data, t->c.data, UMIN(MAX_EXPRESSIONSIZE, t->c.len));
+		str->len = t->c.len;
+	} else if (t->type == TokenIdentifier) {
+		if (!Strccmp(t->c, "zadzwon")) {
+			g_zadzwon(f, str);
+		} else if (!Strccmp(t->c, "powieksz")
+		       ||  !Strccmp(t->c, "pomniejsz")
+		       ||  !Strccmp(t->c, "popowieksz")
+		       ||  !Strccmp(t->c, "popomniejsz")) {
+			ExpressionString expr;
+			int v = !Strccmp(t->c, "powieksz") ? 1 : !Strccmp(t->c, "pomniejsz") ? 2 :
+			!Strccmp(t->c, "popowieksz") ? 3 : !Strccmp(t->c, "popomniejsz") ? 4 : 0;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%s%.*s%s",
+					v == 1 ? "++" : v == 2 ? "--" : "",
+					Strevalf(expr),
+					v == 3 ? "++" : v == 4 ? "--" : "");
+		} else if (!Strccmp(t->c, "ustaw")) {
+			ExpressionString what, as;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &what);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "jako"))
+				errwarn(*f, 1, "unexpected identifier (expected jako)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &as);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s = %.*s",
+					Strevalf(what), Strevalf(as));
+		} else if (!Strccmp(t->c, "dodaj")) {
+			ExpressionString what, where;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &what);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "do"))
+				errwarn(*f, 1, "unexpected identifier (expected do)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &where);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s += %.*s",
+					Strevalf(where), Strevalf(what));
+		} else if (!Strccmp(t->c, "odejmij")) {
+			ExpressionString what, from;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &what);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "od"))
+				errwarn(*f, 1, "unexpected identifier (expected od)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &from);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s -= %.*s",
+					Strevalf(from), Strevalf(what));
+		} else if (!Strccmp(t->c, "pomnoz")) {
+			ExpressionString what, bywhat;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &what);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "przez"))
+				errwarn(*f, 1, "unexpected identifier (expected przez)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &bywhat);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s *= %.*s",
+					Strevalf(what), Strevalf(bywhat));
+		} else if (!Strccmp(t->c, "podziel")) {
+			ExpressionString what, bywhat;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &what);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "przez"))
+				errwarn(*f, 1, "unexpected identifier (expected przez)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &bywhat);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s /= %.*s",
+					Strevalf(what), Strevalf(bywhat));
+		} else if (!Strccmp(t->c, "suma")) {
+			ExpressionString first, second;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &first);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "oraz"))
+				errwarn(*f, 1, "unexpected identifier (expected oraz)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &second);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s + %.*s",
+					Strevalf(first), Strevalf(second));
+		} else if (!Strccmp(t->c, "roznica")) {
+			ExpressionString first, second;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &first);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "oraz"))
+				errwarn(*f, 1, "unexpected identifier (expected oraz)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &second);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s - %.*s",
+					Strevalf(first), Strevalf(second));
+		} else if (!Strccmp(t->c, "iloczyn")) {
+			ExpressionString first, second;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &first);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "oraz"))
+				errwarn(*f, 1, "unexpected identifier (expected oraz)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &second);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s * %.*s",
+					Strevalf(first), Strevalf(second));
+		} else if (!Strccmp(t->c, "iloraz")) {
+			ExpressionString first, second;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &first);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "oraz"))
+				errwarn(*f, 1, "unexpected identifier (expected oraz)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &second);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s / %.*s",
+					Strevalf(first), Strevalf(second));
+		} else if (!Strccmp(t->c, "reszta")) {
+			ExpressionString first, second;
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "z"))
+				errwarn(*f, 1, "unexpected identifier (expected z)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &first);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "przez"))
+				errwarn(*f, 1, "unexpected identifier (expected przez)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &second);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "%.*s %% %.*s",
+					Strevalf(first), Strevalf(second));
+		} else if (!Strccmp(t->c, "adres")) {
+			ExpressionString expr;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "&(%.*s)",
+					Strevalf(expr));
+		} else if (!Strccmp(t->c, "zawartosc")) {
+			ExpressionString expr;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "*(%.*s)",
+					Strevalf(expr));
+		} else if (!Strccmp(t->c, "przeciwienstwo")) {
+			ExpressionString expr;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "-(%.*s)",
+					Strevalf(expr));
+		} else if (!Strccmp(t->c, "nie")) {
+			ExpressionString expr;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "!(%.*s)",
+					Strevalf(expr));
+		} else {
+			strncpy(str->data, t->c.data, UMIN(MAX_EXPRESSIONSIZE, t->c.len));
+			str->len = t->c.len;
+		}
 	} else {
 		errwarn(*f, 1, "expected expression");
 	}
+	str->data[UMIN(str->len, MAX_EXPRESSIONSIZE - 1)] = 0;
 }
 
 static void
-g_zadzwon(File *f)
+g_zadzwon(File *f, ExpressionString *str)
 {
 	Token *t;
 	String name;
+	ExpressionString expr;
 
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
-	dprintf(f->outfd, "%.*s(",
-			Strevalf(name));
+	str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE,
+			"%.*s(", Strevalf(name));
 	t = enextToken(f, TokenNULL);
 	if (t->type == TokenIdentifier) {
 		if (!Strccmp(t->c, "daj")) {
 			while ((t = enextToken(f, TokenNULL))) {
+				g_expression(f, &expr);
+				strncat(str->data, expr.data, MAX_EXPRESSIONSIZE);
+				str->len += expr.len;
+				t = enextToken(f, TokenNULL);
 				if (t->type == TokenSemicolon)
-					goto semicolon;
-				else
-					g_expression(f);
+					break;
+				else if (t->type == TokenComma) {
+					strncat(str->data, ", ", MAX_EXPRESSIONSIZE);
+					str->len += 2;
+				} else {
+					errwarn(*f, 1, "unexpected %s (expected comma or semicolon)",
+							stringizeTokenType(t->type));
+				}
 			}
 		} else {
 			errwarn(*f, 1, "unexpected identifier (expected daj)");
 		}
-	} else if (t->type == TokenSemicolon) {
-semicolon:
-		dprintf(f->outfd, ");\n");
-		return;
-	} else {
-		errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
 	}
+	strncat(str->data, ")", MAX_EXPRESSIONSIZE);
+	str->len += 1;
 }
 
 static void
@@ -247,24 +421,26 @@ static void
 g_aglomeracja(File *f)
 {
 	Token *t;
+	ExpressionString expr;
 
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenIdentifier) {
-			if (!(Strccmp(t->c, "koniec"))) {
+			if (!Strccmp(t->c, "koniec")) {
 				dprintf(f->outfd, "}\n");
 				return;
-			} else if (!(Strccmp(t->c, "zadzwon"))) {
-				g_zadzwon(f);
-			} else if (!(Strccmp(t->c, "obywatel"))) {
+			} else if (!Strccmp(t->c, "obywatel")) {
 				g_obywatel(f);
-			} else if (!(Strccmp(t->c, "typ"))) {
+			} else if (!Strccmp(t->c, "typ")) {
 				dprintf(f->outfd, "typedef ");
 				g_obywatel(f);
 			} else {
-				errwarn(*f, 1, "unexpected identifier (expected a keyword)");
+				goto expr;
 			}
+		} else if (t->type == TokenSemicolon) {
 		} else {
-			errwarn(*f, 1, "unexpected token (expected an expression)");
+expr:
+			g_expression(f, &expr);
+			dprintf(f->outfd, "%.*s;\n", Strevalf(expr));
 		}
 	}
 
@@ -289,7 +465,7 @@ g_miasto(File *f)
 			g_aglomeracja(f);
 			return;
 		} else if (t->type == TokenIdentifier) {
-			if (!(Strccmp(t->c, "oddaje"))) {
+			if (!Strccmp(t->c, "oddaje")) {
 				g_type(f, &type);
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected przyjmuje or oddaje)");
@@ -310,16 +486,17 @@ void
 compile(File f)
 {
 	Token *t;
+
 	while ((t = nextToken(&f)) != NULL) {
-		if (!(Strccmp(t->c, "wykorzystaj"))) {
+		if (!Strccmp(t->c, "wykorzystaj")) {
 			t = enextToken(&f, TokenString);
 			dprintf(f.outfd, "#include <%.*s.h>\n",
 					(int)t->c.len - 2, t->c.data + 1);
-		} else if (!(Strccmp(t->c, "miasto"))) {
+		} else if (!Strccmp(t->c, "miasto")) {
 			g_miasto(&f);
-		} else if (!(Strccmp(t->c, "obywatel"))) {
+		} else if (!Strccmp(t->c, "obywatel")) {
 			g_obywatel(&f);
-		} else if (!(Strccmp(t->c, "typ"))) {
+		} else if (!Strccmp(t->c, "typ")) {
 			dprintf(f.outfd, "typedef ");
 			g_obywatel(&f);
 		} else {
