@@ -1,22 +1,24 @@
 wykorzystaj "stdio"
 
-miasto bonifacy przyjmuje (n przechowuje cyferki) oddaje cyferki:
-	jesli n jest rowne 0 albo n jest rowne 1 wtedy
-		oddaj n;
+miasto bonifacy przyjmuje: n przechowuje cyferki; oddaje dlugie cyferki:
+	jesli naprawde n jest rowne 0 albo naprawde n jest rowne 1 wtedy:
+		oddaj n
 	inaczej
-		oddaj (
-			(zadzwon bonifacy daj (n - 1))
-				plus
-			(zadzwon bonifacy daj (n - 2))
-		);
+		oddaj suma
+			zadzwon bonifacy daj: roznica n oraz 1; oraz
+			zadzwon bonifacy daj: roznica n oraz 2;
 	koniec
 koniec
 
-miasto bydgoszcz przyjmuje (argc przechowuje cyferki, wskaznik argv przechowuje literki) oddaje cyferki:
-	zadzwon puts daj ("ciag bonifacego :)");
+miasto bydgoszcz oddaje cyferki:
 	obywatel i przechowuje cyferki;
-	dla ustaw 0 dla i; i jest mniejsze niz 32; powieksz i:
-		zadzwon bonifacy daj (i);
+	zadzwon puts daj: "ciag bonifacego :)";
+	ustaw i jako 0;
+	dopoki naprawde i jest mniejsze niz 32 rob:
+		zadzwon printf daj: "[%d]: %ld\n",
+			i, zadzwon bonifacy daj: i;
+		;
+		powieksz i
 	koniec
 	oddaj 0;
 koniec
