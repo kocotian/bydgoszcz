@@ -31,22 +31,22 @@
 #include <str.h>
 #include <util.h>
 
-#define MAX_TYPESIZE 256
+#define MAX_TYPESIZE 8192
 
-static String defaultType(void);
+typedef struct {
+	char data[MAX_TYPESIZE];
+	size_t len;
+} TypeString;
+
 static Token *enextToken(File *f, TokenType type);
-static void g_type(File *f, String *str);
+static void g_struct(File *f, TypeString *str);
+static void g_type(File *f, TypeString *str);
 static void g_expression(File *f);
 static void g_zadzwon(File *f);
 static void g_obywatel(File *f);
+static void g_aglomeracja(File *f);
 static void g_miasto(File *f);
-
-static String
-defaultType(void)
-{
-	char *data = malloc(MAX_TYPESIZE); /* XXX: not freed */
-	return (String){ .data = strcpy(data, "int"), .len = 3 };
-}
+static void initType(TypeString *t);
 
 static Token *
 enextToken(File *f, TokenType type)
@@ -61,17 +61,52 @@ enextToken(File *f, TokenType type)
 }
 
 static void
-g_type(File *f, String *str)
+g_struct(File *f, TypeString *str)
+{
+	Token *t;
+	String name;
+	TypeString type;
+
+	*str->data = 0;
+	strncat(str->data, "struct", MAX_TYPESIZE);
+	t = enextToken(f, TokenNULL);
+	if (t->type == TokenColon) {
+		strncat(str->data, " {\n", MAX_TYPESIZE);
+		while ((t = enextToken(f, TokenIdentifier))) {
+			if (!Strccmp(t->c, "koniec")) {
+				strncat(str->data, "}", MAX_TYPESIZE);
+				break;
+			} else {
+				name = t->c;
+				while ((t = enextToken(f, TokenNULL))) {
+					if (t->type == TokenIdentifier) {
+						if (!Strccmp(t->c, "przechowuje")) {
+							g_type(f, &type);
+						} else {
+							errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
+						}
+					} else if (t->type == TokenSemicolon) {
+						snprintf(str->data + strlen(str->data), MAX_TYPESIZE - strlen(str->data), "%.*s %.*s;\n",
+								Strevalf(type), Strevalf(name));
+						break;
+					} else {
+						errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
+					}
+				}
+			}
+		}
+	} else {
+		errwarn(*f, 1, "unexpected token (expected colon)");
+	}
+}
+
+static void
+g_type(File *f, TypeString *str)
 {
 	Token *t;
 	String name, s;
 
 	int ptrlvl, isptrconst, isvalconst, isunsigned, isshort, islong;
-	/*
-	** flags:
-	** | long | short | unsigned | const value | const pointer |
-	*/
-
 	ptrlvl = isptrconst = isvalconst = isunsigned = isshort = islong = 0;
 
 	while ((t = enextToken(f, TokenIdentifier))) {
@@ -89,6 +124,7 @@ g_type(File *f, String *str)
 		else if (!Strccmp(s, "krotkie")) isshort = 1;
 		else if (!Strccmp(s, "dlugie")) islong = 1;
 		else {
+			/* Basic types */
 			if (!Strccmp(t->c, "literki"))
 				name.len = strlen(name.data = "char");
 			else if (!Strccmp(t->c, "cyferki"))
@@ -99,6 +135,14 @@ g_type(File *f, String *str)
 				name.len = strlen(name.data = "double");
 			else if (!Strccmp(t->c, "cierpienie"))
 				name.len = strlen(name.data = "int");
+			/* Composite types */
+			else if (!Strccmp(t->c, "organizacje")) {
+				TypeString type;
+				g_struct(f, &type);
+				name.len = type.len;
+				name.data = type.data;
+			}
+			/* Other types */
 			else
 				name = t->c;
 			break;
@@ -106,23 +150,26 @@ g_type(File *f, String *str)
 	}
 	str->len = (size_t)(*(str->data) = 0);
 	if (isptrconst && ptrlvl)
-		strncat(str->data, "const ", MAX_TYPESIZE - str->len), str->len += 5;
+		strncat(str->data, "const ", MAX_TYPESIZE);
 	if (isunsigned == 1)
-		strncat(str->data, "unsigned ", MAX_TYPESIZE - str->len), str->len += 9;
+		strncat(str->data, "unsigned ", MAX_TYPESIZE);
 	else if (isunsigned == 2)
-		strncat(str->data, "signed ", MAX_TYPESIZE - str->len), str->len += 7;
+		strncat(str->data, "signed ", MAX_TYPESIZE);
 	if (isshort)
-		strncat(str->data, "short ", MAX_TYPESIZE - str->len), str->len += 6;
+		strncat(str->data, "short ", MAX_TYPESIZE);
 	else if (islong)
-		strncat(str->data, "long ", MAX_TYPESIZE - str->len), str->len += 5;
+		strncat(str->data, "long ", MAX_TYPESIZE);
+	str->len = strlen(str->data);
 
-	strncat(str->data, name.data, UMIN(MAX_TYPESIZE - str->len, name.len));
+	strncpy(str->data + str->len,
+			name.data,
+			UMIN(MAX_TYPESIZE - str->len, name.len));
 	str->len += name.len;
 
 	while (ptrlvl > 0 && ptrlvl--)
-		strncat(str->data, "*", MAX_TYPESIZE - str->len++);
+		strncat(str->data, "*", MAX_TYPESIZE), str->len++;
 	if (isvalconst)
-		strncat(str->data, " const", MAX_TYPESIZE - str->len), str->len += 5;
+		strncat(str->data, " const", MAX_TYPESIZE), str->len += 6;
 }
 
 static void
@@ -173,13 +220,12 @@ static void
 g_obywatel(File *f)
 {
 	String name;
-	String type;
+	TypeString type;
 
 	Token *t;
 
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
-	type = defaultType();
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenIdentifier) {
 			if (!Strccmp(t->c, "przechowuje")) {
@@ -207,10 +253,13 @@ g_aglomeracja(File *f)
 			if (!(Strccmp(t->c, "koniec"))) {
 				dprintf(f->outfd, "}\n");
 				return;
-			} else if (!(Strccmp(t->c, "obywatel"))) {
-				g_obywatel(f);
 			} else if (!(Strccmp(t->c, "zadzwon"))) {
 				g_zadzwon(f);
+			} else if (!(Strccmp(t->c, "obywatel"))) {
+				g_obywatel(f);
+			} else if (!(Strccmp(t->c, "typ"))) {
+				dprintf(f->outfd, "typedef ");
+				g_obywatel(f);
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected a keyword)");
 			}
@@ -226,13 +275,13 @@ static void
 g_miasto(File *f)
 {
 	String name;
-	String type;
+	TypeString type;
 
 	Token *t;
 
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
-	type = defaultType();
+	initType(&type);
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenColon) {
 			dprintf(f->outfd, "%.*s %.*s() {\n",
@@ -251,6 +300,12 @@ g_miasto(File *f)
 	}
 }
 
+static void
+initType(TypeString *t)
+{
+	t->len = strlen(strcpy(t->data, "int"));
+}
+
 void
 compile(File f)
 {
@@ -260,10 +315,13 @@ compile(File f)
 			t = enextToken(&f, TokenString);
 			dprintf(f.outfd, "#include <%.*s.h>\n",
 					(int)t->c.len - 2, t->c.data + 1);
-		} else if (!(Strccmp(t->c, "obywatel"))) {
-			g_obywatel(&f);
 		} else if (!(Strccmp(t->c, "miasto"))) {
 			g_miasto(&f);
+		} else if (!(Strccmp(t->c, "obywatel"))) {
+			g_obywatel(&f);
+		} else if (!(Strccmp(t->c, "typ"))) {
+			dprintf(f.outfd, "typedef ");
+			g_obywatel(&f);
 		} else {
 			errwarn(f, 1, "unexpected token");
 		}
