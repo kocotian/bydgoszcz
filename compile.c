@@ -520,21 +520,55 @@ g_miasto(File *f)
 {
 	String name;
 	TypeString type;
+	ExpressionString args;
 
 	Token *t;
 
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
 	initType(&type);
+	args.len = (unsigned)(*(args.data) = 0);
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenColon) {
-			dprintf(f->outfd, "%.*s %.*s() {\n",
-					Strevalf(type), Strevalf(name));
+			dprintf(f->outfd, "%.*s %.*s(%.*s) {\n",
+					Strevalf(type), Strevalf(name), Strevalf(args));
 			g_aglomeracja(f);
 			return;
 		} else if (t->type == TokenIdentifier) {
 			if (!Strccmp(t->c, "oddaje")) {
 				g_type(f, &type);
+			} else if (!Strccmp(t->c, "przyjmuje")) {
+				t = enextToken(f, TokenColon);
+				while ((t = enextToken(f, TokenIdentifier))) {
+					if (!Strccmp(t->c, "koniec")) {
+						break;
+					} else {
+						String argname;
+						TypeString argtype;
+
+						argname = t->c;
+						t = enextToken(f, TokenNULL);
+						if (t->type == TokenIdentifier) {
+							if (!Strccmp(t->c, "przechowuje")) {
+								g_type(f, &argtype);
+							} else {
+								errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
+							}
+							t = enextToken(f, TokenNULL);
+						}
+						if (t->type == TokenComma || t->type == TokenSemicolon) {
+							args.len += (size_t)snprintf(
+									(char *)(args.data + strlen(args.data)),
+									MAX_TYPESIZE - strlen(args.data),
+									"%.*s %.*s%s",
+									Strevalf(argtype), Strevalf(argname),
+									t->type == TokenComma ? ", " : "");
+							if (t->type == TokenSemicolon) break;
+						} else {
+							errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
+						}
+					}
+				}
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected przyjmuje or oddaje)");
 			}
