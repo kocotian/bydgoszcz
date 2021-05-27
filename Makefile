@@ -1,4 +1,4 @@
-# bydgoszczscript - simple, fast and efficient programming language
+# bydgoszcz - simple, fast and efficient programming language
 # Copyright (C) 2021  Kacper Kocot <kocotian@kocotian.pl>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -15,12 +15,12 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-all: bsc
+all: by
 
-bsc: bsc.c util.c str.c compile.c token.c errwarn.c
+by: by.c util.c str.c compile.c token.c errwarn.c
 	${CC} -std=c99 -pedantic -Wall -Wextra -Wconversion -Iinclude -o $@ $^
 
 clean:
-	rm -f bsc
+	rm -f by
 
 .PHONY: all clean
