@@ -30,7 +30,7 @@ typedef enum {
 	TokenNULL,
 	TokenIdentifier, TokenNumber, TokenString,
 	TokenOpeningParenthesis, TokenClosingParenthesis,
-	TokenColon, TokenSemicolon,
+	TokenColon, TokenSemicolon, TokenComma,
 } TokenType;
 
 typedef struct Token {

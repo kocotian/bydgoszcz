@@ -93,6 +93,11 @@ nextToken(File *f)
 		TYPE(TokenSemicolon);
 		++i;
 	}
+	/* Comma */
+	else if ((CURCHAR == ',')) {
+		TYPE(TokenComma);
+		++i;
+	}
 	/* Other unexpected token */
 	else {
 		errwarn(*f, 1, "unexpected token: '%c'", CURCHAR);
