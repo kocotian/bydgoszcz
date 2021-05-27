@@ -437,20 +437,22 @@ g_aglomeracja(File *f)
 				dprintf(f->outfd, "return ");
 				t = enextToken(f, TokenNULL);
 				goto expr;
-			} else if (!Strccmp(t->c, "jesli")) {
-				dprintf(f->outfd, "if (");
+			} else if (!Strccmp(t->c, "jesli") || !Strccmp(t->c, "dopoki")) {
+				int isif; isif = !Strccmp(t->c, "jesli");
+				dprintf(f->outfd, isif ? "if (" : "while (");
 				while ((t = enextToken(f, TokenNULL))) {
 					g_expression(f, &expr);
 					t = enextToken(f, TokenIdentifier);
 					dprintf(f->outfd, "(%.*s)", Strevalf(expr));
-					if (!Strccmp(t->c, "wtedy"))
+					if ((isif && !Strccmp(t->c, "wtedy")) || (!isif && !Strccmp(t->c, "rob")))
 						break;
 					else if (!Strccmp(t->c, "albo")) {
 						dprintf(f->outfd, " || ");
 					} else if (!Strccmp(t->c, "oraz")) {
 						dprintf(f->outfd, " && ");
 					} else {
-						errwarn(*f, 1, "unexpected identifier (expected albo, oraz or wtedy)");
+						errwarn(*f, 1, "unexpected identifier (expected albo, oraz or %s)",
+								isif ? "wtedy" : "rob");
 					}
 				}
 				dprintf(f->outfd, ") {\n");
