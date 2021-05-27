@@ -1,3 +1,6 @@
 #!/bin/sh
-CCODE="$(by-core $@)" || exit 1
+CCODE="$(by-core $@)
+int main(void) {
+	return bydgoszcz();
+}" || exit 1
 echo "$CCODE" | gcc -std=c99 -pedantic -x c -
