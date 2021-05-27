@@ -134,7 +134,9 @@ g_type(File *f, TypeString *str)
 		else if (!Strccmp(s, "dlugie")) islong = 1;
 		else {
 			/* Basic types */
-			if (!Strccmp(t->c, "literki"))
+			if (!Strccmp(t->c, "zadupie"))
+				name.len = strlen(name.data = "void");
+			else if (!Strccmp(t->c, "literki"))
 				name.len = strlen(name.data = "char");
 			else if (!Strccmp(t->c, "cyferki"))
 				name.len = strlen(name.data = "int");
