@@ -1,7 +1,7 @@
-bydgoszczscript
-===============
+bydgoszcz
+=========
 
-bydgoszczscript is a simple, fast and efficient programming language.
+bydgoszcz is a simple, fast and efficient programming language.
 
 building:
 	$ make
