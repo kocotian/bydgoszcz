@@ -356,6 +356,12 @@ g_expression(File *f, ExpressionString *str)
 			g_expression(f, &expr);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "!(%.*s)",
 					Strevalf(expr));
+		} else if (!Strccmp(t->c, "wielkosc")) {
+			ExpressionString expr;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "sizeof (%.*s)",
+					Strevalf(expr));
 		} else if (!Strccmp(t->c, "naprawde") || !Strccmp(t->c, "czy")) {
 			ExpressionString lexpr, rexpr;
 			int not; int equal; int greater; int lower;
