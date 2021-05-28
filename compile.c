@@ -441,6 +441,7 @@ g_obywatel(File *f)
 
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
+	initType(&type);
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenIdentifier) {
 			if (!Strccmp(t->c, "przechowuje")) {
