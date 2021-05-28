@@ -276,6 +276,10 @@ g_expression(File *f, ExpressionString *str)
 					v == 1 ? "++" : v == 2 ? "--" : "",
 					Strevalf(expr),
 					v == 3 ? "++" : v == 4 ? "--" : "");
+		} else if (!Strccmp(t->c, "prawda")) {
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "1");
+		} else if (!Strccmp(t->c, "nieprawda")) {
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "0");
 		} else if (!Strccmp(t->c, "ustaw")) {
 			ExpressionString what, as;
 			t = enextToken(f, TokenNULL);
