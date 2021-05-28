@@ -383,6 +383,18 @@ tester:
 					greater ? ">" : lower ? "<" : equal ? "=" : "",
 					equal ? "=" : "",
 					Strevalf(rexpr));
+		} else if (!Strccmp(t->c, "czlonek")) {
+			ExpressionString organization;
+			String member;
+			t = enextToken(f, TokenIdentifier);
+			member = t->c;
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "organizacji"))
+				errwarn(*f, 1, "unexpected identifier (expected organizacji)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &organization);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s).%.*s",
+					Strevalf(organization), Strevalf(member));
 		} else {
 			strncpy(str->data, t->c.data, UMIN(MAX_EXPRESSIONSIZE, t->c.len));
 			str->len = t->c.len;
