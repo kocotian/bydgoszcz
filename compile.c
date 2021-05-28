@@ -172,20 +172,20 @@ g_type(File *f, TypeString *str)
 	}
 	str->len = (size_t)(*(str->data) = 0);
 	if (isptrconst && ptrlvl)
-		strncat(str->data, "const ", MAX_TYPESIZE);
+		str->len = strlen(strncat(str->data, "const ", MAX_TYPESIZE - str->len));
 	if (isunsigned == 1)
-		strncat(str->data, "unsigned ", MAX_TYPESIZE);
+		str->len = strlen(strncat(str->data, "unsigned ", MAX_TYPESIZE - str->len));
 	else if (isunsigned == 2)
-		strncat(str->data, "signed ", MAX_TYPESIZE);
+		str->len = strlen(strncat(str->data, "signed ", MAX_TYPESIZE - str->len));
 	if (isshort)
-		strncat(str->data, "short ", MAX_TYPESIZE);
+		str->len = strlen(strncat(str->data, "short ", MAX_TYPESIZE - str->len));
 	else if (islong)
-		strncat(str->data, "long ", MAX_TYPESIZE);
-	str->len = strlen(str->data);
+		str->len = strlen(strncat(str->data, "long ", MAX_TYPESIZE - str->len));
 
-	strncpy(str->data + str->len,
+	strncat(str->data,
 			name.data,
 			UMIN(MAX_TYPESIZE - str->len, name.len));
+
 	str->len += name.len;
 
 	while (ptrlvl > 0 && ptrlvl--)
