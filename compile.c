@@ -660,7 +660,12 @@ g_miasto(File *f)
 			} else if (!Strccmp(t->c, "przyjmuje")) {
 				t = enextToken(f, TokenColon);
 				while ((t = enextToken(f, TokenIdentifier))) {
-					if (!Strccmp(t->c, "koniec")) {
+					if (!Strccmp(t->c, "cdn")) {
+						args.len += (size_t)snprintf(
+								(char *)(args.data + strlen(args.data)),
+								MAX_TYPESIZE - strlen(args.data),
+								"...");
+						t = enextToken(f, TokenSemicolon);
 						break;
 					} else {
 						String argname;
