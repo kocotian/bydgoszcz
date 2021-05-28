@@ -129,6 +129,7 @@ g_struct(File *f, TypeString *str)
 		while ((t = enextToken(f, TokenIdentifier))) {
 			if (!Strccmp(t->c, "koniec")) {
 				strncat(str->ldata, "}", MAX_TYPESIZE);
+				str->llen = strlen(str->ldata);
 				break;
 			} else {
 				fname = t->c;
