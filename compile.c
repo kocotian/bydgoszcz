@@ -395,6 +395,17 @@ tester:
 			g_expression(f, &organization);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s).%.*s",
 					Strevalf(organization), Strevalf(member));
+		} else if (!Strccmp(t->c, "rzucaj")) {
+			ExpressionString expr;
+			TypeString type;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "w"))
+				errwarn(*f, 1, "unexpected identifier (expected organizacji)");
+			g_type(f, &type);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s)(%.*s)",
+					Strevalf(type), Strevalf(expr));
 		} else {
 			strncpy(str->data, t->c.data, UMIN(MAX_EXPRESSIONSIZE, t->c.len));
 			str->len = t->c.len;
