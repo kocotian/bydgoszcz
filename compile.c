@@ -36,8 +36,8 @@
 #define MAX_EXPRESSIONSIZE 8192
 
 typedef struct {
-	char data[MAX_TYPESIZE];
-	size_t len;
+	char ldata[MAX_TYPESIZE], rdata[MAX_TYPESIZE];
+	size_t llen, rlen;
 } TypeString;
 
 typedef struct {
@@ -46,6 +46,7 @@ typedef struct {
 } ExpressionString;
 
 static Token *enextToken(File *f, TokenType type);
+static void g_array(File *f, TypeString *str);
 static void g_struct(File *f, TypeString *str);
 static void g_type(File *f, TypeString *str);
 static void g_expression(File *f, ExpressionString *str);
@@ -53,7 +54,7 @@ static void g_zadzwon(File *f, ExpressionString *str);
 static void g_obywatel(File *f);
 static void g_aglomeracja(File *f);
 static void g_miasto(File *f);
-static void initType(TypeString *t);
+static void initType(TypeString *t, int blank);
 
 static Token *
 enextToken(File *f, TokenType type)
@@ -68,30 +69,66 @@ enextToken(File *f, TokenType type)
 }
 
 static void
+g_array(File *f, TypeString *str)
+{
+	Token *t;
+	ExpressionString count;
+	TypeString type;
+
+	initType(&type, 1);
+	t = enextToken(f, TokenNULL);
+	if (t->type == TokenNumber) {
+		g_expression(f, &count);
+		t = enextToken(f, TokenIdentifier);
+		if (Strccmp(t->c, "elementow"))
+			errwarn(*f, 1, "unexpected identifier (expected elementow)");
+		t = enextToken(f, TokenNULL);
+	}
+	if (t->type == TokenIdentifier) {
+		if (Strccmp(t->c, "typu"))
+			errwarn(*f, 1, "unexpected identifier (expected typu)");
+		g_type(f, &type);
+	} else {
+		errwarn(*f, 1, "unexpected token (expected identifier)");
+	}
+	snprintf((char *)(str->ldata),
+			MAX_TYPESIZE,
+			"%.*s",
+			(int)(type.llen), type.ldata);
+	str->llen = strlen(str->ldata);
+	snprintf((char *)(str->rdata),
+			MAX_TYPESIZE,
+			"[%.*s]",
+			Strevalf(count));
+	str->rlen = strlen(str->rdata);
+}
+
+static void
 g_struct(File *f, TypeString *str)
 {
 	Token *t;
 	String name, fname;
 	TypeString type;
 
-	*str->data = 0;
-	strncat(str->data, "struct", MAX_TYPESIZE);
+	initType(&type, 1);
+	*str->ldata = 0;
+	strncat(str->ldata, "struct", MAX_TYPESIZE);
 	t = enextToken(f, TokenNULL);
 	if (t->type == TokenIdentifier) {
 		name = t->c;
-		strncat(str->data, " ", MAX_TYPESIZE);
-		++(str->len);
-		str->len += UMIN(strlen(str->data) + name.len, MAX_TYPESIZE);
-		strncat(str->data, name.data,
-				UMIN(name.len, MAX_TYPESIZE - str->len));
-		str->data[UMIN(str->len, MAX_TYPESIZE)] = 0;
+		strncat(str->ldata, " ", MAX_TYPESIZE);
+		++(str->llen);
+		str->llen += UMIN(strlen(str->ldata) + name.len, MAX_TYPESIZE);
+		strncat(str->ldata, name.data,
+				UMIN(name.len, MAX_TYPESIZE - str->llen));
+		str->ldata[UMIN(str->llen, MAX_TYPESIZE)] = 0;
 		t = enextToken(f, TokenNULL);
 	}
 	if (t->type == TokenColon) {
-		strncat(str->data, " {\n", MAX_TYPESIZE);
+		strncat(str->ldata, " {\n", MAX_TYPESIZE);
 		while ((t = enextToken(f, TokenIdentifier))) {
 			if (!Strccmp(t->c, "koniec")) {
-				strncat(str->data, "}", MAX_TYPESIZE);
+				strncat(str->ldata, "}", MAX_TYPESIZE);
 				break;
 			} else {
 				fname = t->c;
@@ -103,10 +140,12 @@ g_struct(File *f, TypeString *str)
 							errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
 						}
 					} else if (t->type == TokenSemicolon) {
-						snprintf((char *)(str->data + strlen(str->data)),
-								MAX_TYPESIZE - strlen(str->data),
-								"%.*s %.*s;\n",
-								Strevalf(type), Strevalf(fname));
+						snprintf((char *)(str->ldata + strlen(str->ldata)),
+								MAX_TYPESIZE - strlen(str->ldata),
+								"%.*s %.*s%.*s;\n",
+								(int)(type.llen), type.ldata,
+								Strevalf(fname),
+								(int)(type.rlen), type.rdata);
 						break;
 					} else {
 						errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
@@ -125,9 +164,12 @@ g_type(File *f, TypeString *str)
 {
 	Token *t;
 	String name, s;
+	TypeString arr;
 
 	int ptrlvl, isptrconst, isvalconst, isunsigned, isshort, islong;
 	ptrlvl = isptrconst = isvalconst = isunsigned = isshort = islong = 0;
+
+	initType(&arr, 1);
 
 	while ((t = enextToken(f, TokenIdentifier))) {
 		s = t->c;
@@ -157,12 +199,23 @@ g_type(File *f, TypeString *str)
 				name.len = strlen(name.data = "double");
 			else if (!Strccmp(t->c, "cierpienie"))
 				name.len = strlen(name.data = "int");
+			else if (!Strccmp(t->c, "rodzine")) {
+				TypeString type;
+				initType(&type, 1);
+				g_array(f, &type);
+				name.len = type.llen;
+				name.data = type.ldata;
+				str->rlen = strlen(strncpy(str->rdata,
+							type.rdata,
+							UMIN(MAX_TYPESIZE, type.rlen)));
+			}
 			/* Composite types */
 			else if (!Strccmp(t->c, "organizacje")) {
 				TypeString type;
+				initType(&type, 1);
 				g_struct(f, &type);
-				name.len = type.len;
-				name.data = type.data;
+				name.len = type.llen;
+				name.data = type.ldata;
 			}
 			/* Other types */
 			else
@@ -170,28 +223,31 @@ g_type(File *f, TypeString *str)
 			break;
 		}
 	}
-	str->len = (size_t)(*(str->data) = 0);
+	str->llen = (size_t)(*(str->ldata) = 0);
 	if (isptrconst && ptrlvl)
-		str->len = strlen(strncat(str->data, "const ", MAX_TYPESIZE - str->len));
+		str->llen = strlen(strncat(str->ldata, "const ", MAX_TYPESIZE - str->llen));
 	if (isunsigned == 1)
-		str->len = strlen(strncat(str->data, "unsigned ", MAX_TYPESIZE - str->len));
+		str->llen = strlen(strncat(str->ldata, "unsigned ", MAX_TYPESIZE - str->llen));
 	else if (isunsigned == 2)
-		str->len = strlen(strncat(str->data, "signed ", MAX_TYPESIZE - str->len));
+		str->llen = strlen(strncat(str->ldata, "signed ", MAX_TYPESIZE - str->llen));
 	if (isshort)
-		str->len = strlen(strncat(str->data, "short ", MAX_TYPESIZE - str->len));
+		str->llen = strlen(strncat(str->ldata, "short ", MAX_TYPESIZE - str->llen));
 	else if (islong)
-		str->len = strlen(strncat(str->data, "long ", MAX_TYPESIZE - str->len));
+		str->llen = strlen(strncat(str->ldata, "long ", MAX_TYPESIZE - str->llen));
 
-	strncat(str->data,
+	strncat(str->ldata,
 			name.data,
-			UMIN(MAX_TYPESIZE - str->len, name.len));
+			UMIN(MAX_TYPESIZE - str->llen, name.len));
 
-	str->len += name.len;
+	str->llen += name.len;
 
 	while (ptrlvl > 0 && ptrlvl--)
-		strncat(str->data, "*", MAX_TYPESIZE), str->len++;
+		strncat(str->ldata, "*", MAX_TYPESIZE), str->llen++;
 	if (isvalconst)
-		strncat(str->data, " const", MAX_TYPESIZE), str->len += 6;
+		strncat(str->ldata, " const", MAX_TYPESIZE), str->llen += 6;
+	strncat(str->ldata,
+			arr.ldata,
+			UMIN(MAX_TYPESIZE - str->llen, arr.llen));
 }
 
 static void
@@ -412,9 +468,21 @@ tester:
 			g_expression(f, &organization);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s).%.*s",
 					Strevalf(organization), Strevalf(member));
+		} else if (!Strccmp(t->c, "element")) {
+			ExpressionString element, family;
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &element);
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "rodziny"))
+				errwarn(*f, 1, "unexpected identifier (expected organizacji)");
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &family);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s)[%.*s]",
+					Strevalf(family), Strevalf(element));
 		} else if (!Strccmp(t->c, "rzucaj")) {
 			ExpressionString expr;
 			TypeString type;
+			initType(&type, 1);
 			t = enextToken(f, TokenNULL);
 			g_expression(f, &expr);
 			t = enextToken(f, TokenIdentifier);
@@ -422,7 +490,7 @@ tester:
 				errwarn(*f, 1, "unexpected identifier (expected organizacji)");
 			g_type(f, &type);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s)(%.*s)",
-					Strevalf(type), Strevalf(expr));
+					(int)(type.llen), type.ldata, Strevalf(expr));
 		} else if (!Strccmp(t->c, "__c")) {
 			t = enextToken(f, TokenString);
 			strncpy(str->data, t->c.data + 1, t->c.len - 2);
@@ -483,9 +551,9 @@ g_obywatel(File *f)
 
 	Token *t;
 
+	initType(&type, 0);
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
-	initType(&type);
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenIdentifier) {
 			if (!Strccmp(t->c, "przechowuje")) {
@@ -494,8 +562,10 @@ g_obywatel(File *f)
 				errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
 			}
 		} else if (t->type == TokenSemicolon) {
-			dprintf(f->outfd, "%.*s %.*s;\n",
-					Strevalf(type), Strevalf(name));
+			dprintf(f->outfd, "%.*s %.*s%.*s;\n",
+					(int)(type.llen), type.ldata,
+					Strevalf(name),
+					(int)(type.rlen), type.rdata);
 			return;
 		} else {
 			errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
@@ -569,14 +639,14 @@ g_miasto(File *f)
 
 	Token *t;
 
+	initType(&type, 0);
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
-	initType(&type);
 	args.len = (unsigned)(*(args.data) = 0);
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenColon) {
 			dprintf(f->outfd, "%.*s %.*s(%.*s) {\n",
-					Strevalf(type), Strevalf(name), Strevalf(args));
+					(int)(type.llen), type.ldata, Strevalf(name), Strevalf(args));
 			g_aglomeracja(f);
 			return;
 		} else if (t->type == TokenIdentifier) {
@@ -591,6 +661,7 @@ g_miasto(File *f)
 						String argname;
 						TypeString argtype;
 
+						initType(&type, 0);
 						argname = t->c;
 						t = enextToken(f, TokenNULL);
 						if (t->type == TokenIdentifier) {
@@ -605,8 +676,10 @@ g_miasto(File *f)
 							args.len += (size_t)snprintf(
 									(char *)(args.data + strlen(args.data)),
 									MAX_TYPESIZE - strlen(args.data),
-									"%.*s %.*s%s",
-									Strevalf(argtype), Strevalf(argname),
+									"%.*s %.*s%.*s%s",
+									(int)(argtype.llen), argtype.ldata,
+									Strevalf(argname),
+									(int)(argtype.rlen), argtype.rdata,
 									t->type == TokenComma ? ", " : "");
 							if (t->type == TokenSemicolon) break;
 						} else {
@@ -624,9 +697,10 @@ g_miasto(File *f)
 }
 
 static void
-initType(TypeString *t)
+initType(TypeString *t, int blank)
 {
-	t->len = strlen(strcpy(t->data, "int"));
+	t->llen = strlen(strcpy(t->ldata, blank ? "" : "int"));
+	t->rlen = strlen(strcpy(t->rdata, ""));
 }
 
 void
