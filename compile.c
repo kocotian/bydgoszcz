@@ -71,12 +71,22 @@ static void
 g_struct(File *f, TypeString *str)
 {
 	Token *t;
-	String name;
+	String name, fname;
 	TypeString type;
 
 	*str->data = 0;
 	strncat(str->data, "struct", MAX_TYPESIZE);
 	t = enextToken(f, TokenNULL);
+	if (t->type == TokenIdentifier) {
+		name = t->c;
+		strncat(str->data, " ", MAX_TYPESIZE);
+		++(str->len);
+		str->len += UMIN(strlen(str->data) + name.len, MAX_TYPESIZE);
+		strncat(str->data, name.data,
+				UMIN(name.len, MAX_TYPESIZE - str->len));
+		str->data[UMIN(str->len, MAX_TYPESIZE)] = 0;
+		t = enextToken(f, TokenNULL);
+	}
 	if (t->type == TokenColon) {
 		strncat(str->data, " {\n", MAX_TYPESIZE);
 		while ((t = enextToken(f, TokenIdentifier))) {
@@ -84,7 +94,7 @@ g_struct(File *f, TypeString *str)
 				strncat(str->data, "}", MAX_TYPESIZE);
 				break;
 			} else {
-				name = t->c;
+				fname = t->c;
 				while ((t = enextToken(f, TokenNULL))) {
 					if (t->type == TokenIdentifier) {
 						if (!Strccmp(t->c, "przechowuje")) {
@@ -96,7 +106,7 @@ g_struct(File *f, TypeString *str)
 						snprintf((char *)(str->data + strlen(str->data)),
 								MAX_TYPESIZE - strlen(str->data),
 								"%.*s %.*s;\n",
-								Strevalf(type), Strevalf(name));
+								Strevalf(type), Strevalf(fname));
 						break;
 					} else {
 						errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
@@ -104,6 +114,7 @@ g_struct(File *f, TypeString *str)
 				}
 			}
 		}
+	} else if (t->type == TokenSemicolon) {
 	} else {
 		errwarn(*f, 1, "unexpected token (expected colon)");
 	}
