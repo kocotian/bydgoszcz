@@ -51,12 +51,14 @@ nextToken(File *f)
 		return NULL;
 	/* Identifier */
 	else if ((CURCHAR >= 'a' && CURCHAR <= 'z')
-	     ||  (CURCHAR >= 'A' && CURCHAR <= 'Z')) {
+	     ||  (CURCHAR >= 'A' && CURCHAR <= 'Z')
+	     ||  (CURCHAR == '_')) {
 		TYPE(TokenIdentifier);
 		++i;
 		while (((CURCHAR >= 'a' && CURCHAR <= 'z')
 	       ||   (CURCHAR >= 'A' && CURCHAR <= 'Z')
-	       ||   (CURCHAR >= '0' && CURCHAR <= '9'))
+	       ||   (CURCHAR >= '0' && CURCHAR <= '9')
+	       ||   (CURCHAR == '_'))
 		   &&  NOT_OVERFLOW) ++i;
 	}
 	/* Number */
