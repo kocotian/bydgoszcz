@@ -423,6 +423,13 @@ tester:
 			g_type(f, &type);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s)(%.*s)",
 					Strevalf(type), Strevalf(expr));
+		} else if (!Strccmp(t->c, "wsadz")) {
+			t = enextToken(f, TokenIdentifier);
+			if (Strccmp(t->c, "c"))
+				errwarn(*f, 1, "unexpected identifier (expected c)");
+			t = enextToken(f, TokenString);
+			strncpy(str->data, t->c.data + 1, t->c.len - 2);
+			str->len = t->c.len - 2;
 		} else {
 			strncpy(str->data, t->c.data, UMIN(MAX_EXPRESSIONSIZE, t->c.len));
 			str->len = t->c.len;
