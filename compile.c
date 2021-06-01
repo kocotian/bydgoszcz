@@ -479,7 +479,7 @@ tester:
 			g_expression(f, &element);
 			t = enextToken(f, TokenIdentifier);
 			if (Strccmp(t->c, "rodziny"))
-				errwarn(*f, 1, "unexpected identifier (expected organizacji)");
+				errwarn(*f, 1, "unexpected identifier (expected rodziny)");
 			t = enextToken(f, TokenNULL);
 			g_expression(f, &family);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s)[%.*s]",
