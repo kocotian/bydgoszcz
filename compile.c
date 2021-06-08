@@ -496,6 +496,22 @@ tester:
 			g_type(f, &type);
 			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(%.*s)(%.*s)",
 					(int)(type.llen), type.ldata, Strevalf(expr));
+		} else if (!Strccmp(t->c, "nieoznakowane")) {
+			ExpressionString expr;
+			TypeString type;
+			initType(&type, 1);
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(unsigned)(%.*s)",
+					Strevalf(expr));
+		} else if (!Strccmp(t->c, "oznakowane")) {
+			ExpressionString expr;
+			TypeString type;
+			initType(&type, 1);
+			t = enextToken(f, TokenNULL);
+			g_expression(f, &expr);
+			str->len = (size_t)snprintf(str->data, MAX_EXPRESSIONSIZE, "(signed)(%.*s)",
+					Strevalf(expr));
 		} else if (!Strccmp(t->c, "__c")) {
 			t = enextToken(f, TokenString);
 			strncpy(str->data, t->c.data + 1, t->c.len - 2);
