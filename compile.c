@@ -569,24 +569,31 @@ g_obywatel(File *f)
 {
 	String name;
 	TypeString type;
+	ExpressionString expr;
 
 	Token *t;
 
 	initType(&type, 0);
 	t = enextToken(f, TokenIdentifier);
 	name = t->c;
+	expr.len = strlen(strcpy(expr.data, ""));
 	while ((t = enextToken(f, TokenNULL))) {
 		if (t->type == TokenIdentifier) {
 			if (!Strccmp(t->c, "przechowuje")) {
 				g_type(f, &type);
+			} else if (!Strccmp(t->c, "rowne")) {
+				t = enextToken(f, TokenNULL);
+				g_expression(f, &expr);
 			} else {
 				errwarn(*f, 1, "unexpected identifier (expected przechowuje)");
 			}
 		} else if (t->type == TokenSemicolon) {
-			dprintf(f->outfd, "%.*s %.*s%.*s;\n",
+			dprintf(f->outfd, "%.*s %.*s%.*s%s%.*s;\n",
 					(int)(type.llen), type.ldata,
 					Strevalf(name),
-					(int)(type.rlen), type.rdata);
+					(int)(type.rlen), type.rdata,
+					expr.len ? " = " : "",
+					(int)(expr.len), expr.data);
 			return;
 		} else {
 			errwarn(*f, 1, "unexpected token (expected identifier or semicolon)");
